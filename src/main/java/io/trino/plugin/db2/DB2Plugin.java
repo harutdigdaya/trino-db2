@@ -20,6 +20,6 @@ public class DB2Plugin
 {
     public DB2Plugin()
     {
-        super("db2", new DB2ClientModule());
+        super("db2", DB2ClientModule::new);
     }
 }

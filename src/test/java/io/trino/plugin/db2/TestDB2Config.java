@@ -18,18 +18,16 @@ import org.testng.annotations.Test;
 
 import java.util.Map;
 
-import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
-import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
-import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDB2Config
 {
     @Test
     public void testDefaults()
     {
-        assertRecordedDefaults(recordDefaults(DB2Config.class)
-                .setVarcharMaxLength(32672)
-                .setApiKey(null));
+        DB2Config config = new DB2Config();
+        assertThat(config.getVarcharMaxLength()).isEqualTo(32672);
+        assertThat(config.getApiKey()).isNull();
     }
 
     @Test
@@ -47,6 +45,8 @@ public class TestDB2Config
                 .setVarcharMaxLength(testVarcharLength)
                 .setApiKey(testApiKey);
 
-        assertFullMapping(properties, expected);
+        assertThat(properties)
+                .usingRecursiveComparison()
+                .isEqualTo(expected);
     }
 }

@@ -14,11 +14,11 @@
 package io.trino.plugin.db2;
 
 import com.google.inject.Binder;
-import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.ibm.db2.jcc.DB2Driver;
+import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.trino.plugin.jdbc.BaseJdbcConfig;
 import io.trino.plugin.jdbc.ConnectionFactory;
 import io.trino.plugin.jdbc.DecimalModule;
@@ -33,10 +33,10 @@ import java.util.Properties;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 
 public class DB2ClientModule
-        implements Module
+        extends AbstractConfigurationAwareModule
 {
     @Override
-    public void configure(Binder binder)
+    protected void setup(Binder binder)
     {
         binder.bind(JdbcClient.class).annotatedWith(ForBaseJdbc.class).to(DB2Client.class).in(Scopes.SINGLETON);
         configBinder(binder).bindConfig(BaseJdbcConfig.class);
@@ -62,6 +62,9 @@ public class DB2ClientModule
             connectionProperties.setProperty("pluginName", "IBMIAMauth");
         }
 
-        return new DriverConnectionFactory(new DB2Driver(), config.getConnectionUrl(), connectionProperties, credentialProvider);
+        DriverConnectionFactory.Builder builder = DriverConnectionFactory.builder(new DB2Driver(), config.getConnectionUrl(), credentialProvider);
+        builder.setConnectionProperties(connectionProperties);
+        return builder.build();
+//        return new DriverConnectionFactory(new DB2Driver(), config.getConnectionUrl(), connectionProperties, credentialProvider);
     }
 }
