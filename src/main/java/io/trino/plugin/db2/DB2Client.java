@@ -23,6 +23,7 @@ import io.trino.plugin.jdbc.JdbcSplit;
 import io.trino.plugin.jdbc.JdbcTableHandle;
 import io.trino.plugin.jdbc.JdbcTypeHandle;
 import io.trino.plugin.jdbc.LongReadFunction;
+import io.trino.plugin.jdbc.LongWriteFunction;
 import io.trino.plugin.jdbc.ObjectReadFunction;
 import io.trino.plugin.jdbc.ObjectWriteFunction;
 import io.trino.plugin.jdbc.QueryBuilder;
@@ -42,9 +43,11 @@ import io.trino.spi.type.Type;
 import io.trino.spi.type.VarcharType;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,7 +59,6 @@ import static io.trino.plugin.jdbc.StandardColumnMappings.bigintWriteFunction;
 import static io.trino.plugin.jdbc.StandardColumnMappings.booleanColumnMapping;
 import static io.trino.plugin.jdbc.StandardColumnMappings.booleanWriteFunction;
 import static io.trino.plugin.jdbc.StandardColumnMappings.charWriteFunction;
-import static io.trino.plugin.jdbc.StandardColumnMappings.dateColumnMappingUsingLocalDate;
 import static io.trino.plugin.jdbc.StandardColumnMappings.dateWriteFunctionUsingLocalDate;
 import static io.trino.plugin.jdbc.StandardColumnMappings.decimalColumnMapping;
 import static io.trino.plugin.jdbc.StandardColumnMappings.defaultCharColumnMapping;
@@ -208,7 +210,7 @@ public class DB2Client
                 return Optional.of(varbinaryColumnMapping());
 
             case Types.DATE:
-                return Optional.of(dateColumnMappingUsingLocalDate());
+                return Optional.of(customDateColumnMappingUsingLocalDate());
 
             case Types.TIME:
                 // TODO Consider using `StandardColumnMappings.timeColumnMapping`
@@ -400,5 +402,52 @@ public class DB2Client
                         .collect(joining(", ")),
                 quoted(catalogName, schemaName, tableName));
         execute(session, sql);
+    }
+
+    public static ColumnMapping customDateColumnMappingUsingLocalDate()
+    {
+        return ColumnMapping.longMapping(
+                DATE,
+                customDateReadFunctionUsingLocalDate(),
+                customDateWriteFunctionUsingLocalDate());
+    }
+
+    public static LongReadFunction customDateReadFunctionUsingLocalDate()
+    {
+        return new LongReadFunction()
+        {
+            @Override
+            public boolean isNull(ResultSet resultSet, int columnIndex)
+                    throws SQLException
+            {
+                // 'ResultSet.getObject' without class name may throw an exception
+                // e.g. in MySQL driver, rs.getObject(int) throws for dates between Oct 5 and 14, 1582
+                if (resultSet.getObject(columnIndex) == null) {
+                    return true;
+                }
+                else {
+                    resultSet.getObject(columnIndex, LocalDate.class);
+                    return resultSet.wasNull();
+                }
+            }
+
+            @Override
+            public long readLong(ResultSet resultSet, int columnIndex)
+                    throws SQLException
+            {
+                LocalDate value = resultSet.getObject(columnIndex, LocalDate.class);
+                // Some drivers (e.g. MemSQL's) return null LocalDate even though the value isn't null
+                if (value == null) {
+                    throw new TrinoException(JDBC_ERROR, "Driver returned null LocalDate for a non-null value");
+                }
+
+                return value.toEpochDay();
+            }
+        };
+    }
+
+    public static LongWriteFunction customDateWriteFunctionUsingLocalDate()
+    {
+        return LongWriteFunction.of(Types.DATE, (statement, index, value) -> statement.setObject(index, LocalDate.ofEpochDay(value)));
     }
 }
