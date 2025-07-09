@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.trino.plugin.db2;
+package io.trino.plugin.db2custom;
 
 import io.trino.plugin.jdbc.JdbcPlugin;
 
@@ -20,6 +20,6 @@ public class DB2Plugin
 {
     public DB2Plugin()
     {
-        super("db2", DB2ClientModule::new);
+        super("db2custom", DB2ClientModule::new);
     }
 }

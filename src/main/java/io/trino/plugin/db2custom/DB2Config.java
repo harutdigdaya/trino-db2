@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.trino.plugin.db2;
+package io.trino.plugin.db2custom;
 
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
@@ -24,6 +24,9 @@ public class DB2Config
     private int varcharMaxLength = 32672;
     // this value is for IAM authentication
     private String apiKey;
+
+    private String user;
+    private String password;
 
     @Min(1)
     public int getVarcharMaxLength()
@@ -51,5 +54,33 @@ public class DB2Config
     {
         this.apiKey = apiKey;
         return this;
+    }
+
+    @Config("db2.user")
+    @ConfigSecuritySensitive
+    @ConfigDescription("User DB authentication")
+    public DB2Config setUser(String user)
+    {
+        this.user = user;
+        return this;
+    }
+
+    public String getUser()
+    {
+        return user;
+    }
+
+    @Config("db2.password")
+    @ConfigSecuritySensitive
+    @ConfigDescription("User DB authentication")
+    public DB2Config setPassword(String password)
+    {
+        this.password = password;
+        return this;
+    }
+
+    public String getPassword()
+    {
+        return password;
     }
 }

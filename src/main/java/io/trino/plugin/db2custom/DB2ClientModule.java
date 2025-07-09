@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.trino.plugin.db2;
+package io.trino.plugin.db2custom;
 
 import com.google.inject.Binder;
 import com.google.inject.Provides;
@@ -27,7 +27,9 @@ import io.trino.plugin.jdbc.ForBaseJdbc;
 import io.trino.plugin.jdbc.JdbcClient;
 import io.trino.plugin.jdbc.TypeHandlingJdbcConfig;
 import io.trino.plugin.jdbc.credential.CredentialProvider;
+import io.trino.plugin.jdbc.credential.StaticCredentialProvider;
 
+import java.util.Optional;
 import java.util.Properties;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
@@ -62,7 +64,7 @@ public class DB2ClientModule
             connectionProperties.setProperty("pluginName", "IBMIAMauth");
         }
 
-        DriverConnectionFactory.Builder builder = DriverConnectionFactory.builder(new DB2Driver(), config.getConnectionUrl(), credentialProvider);
+        DriverConnectionFactory.Builder builder = DriverConnectionFactory.builder(new DB2Driver(), config.getConnectionUrl(), new StaticCredentialProvider(Optional.of(db2Config.getUser()), Optional.of(db2Config.getPassword())));
         builder.setConnectionProperties(connectionProperties);
         return builder.build();
 //        return new DriverConnectionFactory(new DB2Driver(), config.getConnectionUrl(), connectionProperties, credentialProvider);
